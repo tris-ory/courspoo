@@ -1,7 +1,7 @@
 <?php
 // Methods can return $this for chaining
 /**
- * Class Character
+ * Class Character define what is a character
  */
 class Character
 {
@@ -101,6 +101,10 @@ class Character
      */
     public function setXP($xp): self
     {
+        if ($xp < Character::NOVICE)
+            $xp = Character::NOVICE;
+        elseif ($xp > Character::EXPERT)
+            $xp = Character::EXPERT;
         $this->xp = $xp;
         return $this;
     }
@@ -140,16 +144,28 @@ class Character
     /**
      * character attacks target character
      *
-     * @param Character $target
-     * @return string
+     * @param Character $target The character who is attacked
+     * @param bool $msg
+     * @return string|null
      */
-    public function attack(Character $target): string
+    public function attack(Character $target, bool $msg = true): ?string
     {
-        $target_life = $target->getLife() - 10 * $this->xp;
-        if ($target_life < 0)
-            $target_life = 0;
-        $target->setLife($target_life);
-        return $this->action('une attaque', $target->getName());
+        switch ($this->xp){
+            case Character::NOVICE:
+                $losePoint = 10;
+                break;
+            case Character::MEDIUM:
+                $losePoint = 20;
+                break;
+            case Character::EXPERT:
+                $losePoint = 30;
+                break;
+            default:
+                $losePoint = 0;
+        }
+        $target->setLife(($target->getLife() <= $losePoint) ? 0 : $target->getLife() - $losePoint);
+
+        return $msg?$this->action('une attaque', $target->getName()):null;
     }
 
     /**
@@ -160,10 +176,8 @@ class Character
      */
     public function superAttack(Character $target): string
     {
-        $target_life = $target->getLife() - 20 * $this->xp;
-        if ($target_life < 0)
-            $target_life = 0;
-        $target->setLife($target_life);
+        $this->attack($target, false);
+        $this->attack($target, false);
         return $this->action('une super-attaque', $target->getName());
     }
 
@@ -195,16 +209,6 @@ class Character
     // Utilities :
 
     /**
-     * get a formatted string with the name and the lifepoints of the character
-     *
-     * @return string
-     */
-    public function getState(): string
-    {
-        return $this->name . ' : ' . $this->life . ' ';
-    }
-
-    /**
      * Send a formatted string with scoreboard of player1 & player2
      *
      * @param self $player1
@@ -212,9 +216,21 @@ class Character
      * @param string $action
      * @return string
      */
-    public static function score(self $player1, self $player2, string $action): string
+    public static function score(self $player1, self $player2, string $action = ''): string
     {
-        return $action . ' ( ' . $player1->getState() . ' ' . $player2->getState() . ' )';
+        return $action . ' ( ' . $player1->getState() . ' - ' . $player2->getState() . ' )';
+    }
+
+
+    /**
+     * get a formatted string with the name and the lifepoints of the character
+     *
+     * @return string
+     */
+    public function getState(): string
+    {
+        // $this->name[0] not optimized use substr
+        return substr($this->name, 0, 1) .  $this->life . ' ';
     }
 
     /**
